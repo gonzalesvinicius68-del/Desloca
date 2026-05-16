@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 from flask_cors import CORS
 import sqlite3
 import hashlib
+import os
 
 app = Flask(__name__)
 app.secret_key = "desloca_gestao_2024"
