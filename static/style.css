@@ -1,0 +1,104 @@
+/* ── Reset e base ── */
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0c1510;font-family:'Segoe UI',sans-serif;color:white;display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:220px;background:#0f1a14;border-right:1px solid #1e3a2a;
+         display:flex;flex-direction:column;padding:24px 0;flex-shrink:0}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;
+              border-bottom:1px solid #1e3a2a;margin-bottom:16px}
+.sidebar-logo .icon{background:#00e87e;width:36px;height:36px;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;
+                    color:#0f1a14;font-weight:bold;font-size:1rem;flex-shrink:0}
+.sidebar-logo h1{font-size:1.1rem}
+.sidebar-logo p{font-size:0.6rem;color:#00e87e;letter-spacing:1px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;
+          color:#aaa;text-decoration:none;font-size:0.88rem;transition:all .2s;
+          border-left:3px solid transparent}
+.nav-item:hover{color:white;background:#1a2e1f}
+.nav-item.ativo{color:#00e87e;background:#1a2e1f;border-left-color:#00e87e}
+.nav-item .ic{width:18px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid #1e3a2a}
+.btn-logout{width:100%;padding:10px;background:transparent;border:1px solid #2d4a35;
+            border-radius:8px;color:#aaa;cursor:pointer;font-size:0.82rem;transition:all .2s}
+.btn-logout:hover{border-color:#ff6b6b;color:#ff6b6b}
+
+/* ── Conteúdo principal ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#0f1a14;padding:16px 28px;border-bottom:1px solid #1e3a2a;
+        display:flex;align-items:center;justify-content:space-between}
+.topbar h2{font-size:1.1rem;font-weight:500}
+.topbar .usuario{font-size:0.82rem;color:#aaa}
+.conteudo{padding:28px;overflow-y:auto;flex:1}
+
+/* ── Cards de estatísticas ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:#0f1a14;border:1px solid #1e3a2a;border-radius:12px;padding:20px}
+.stat-card .numero{font-size:2rem;font-weight:bold;margin-bottom:4px}
+.stat-card .rotulo{font-size:0.78rem;color:#888}
+.stat-card.verde .numero{color:#00e87e}
+.stat-card.amarelo .numero{color:#f0c419}
+.stat-card.vermelho .numero{color:#ff6b6b}
+.stat-card.azul .numero{color:#60a5fa}
+
+/* ── Tabelas ── */
+.tabela-container{background:#0f1a14;border:1px solid #1e3a2a;border-radius:12px;overflow:hidden}
+.tabela-header{display:flex;align-items:center;justify-content:space-between;
+               padding:16px 20px;border-bottom:1px solid #1e3a2a}
+.tabela-header h3{font-size:0.95rem;font-weight:500}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:12px 20px;font-size:0.75rem;color:#666;
+   font-weight:500;text-transform:uppercase;letter-spacing:.5px;
+   border-bottom:1px solid #1e3a2a}
+td{padding:13px 20px;font-size:0.85rem;border-bottom:1px solid #0c1510}
+tr:hover td{background:#1a2e1f33}
+tr:last-child td{border-bottom:none}
+
+/* ── Badges de status ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:500}
+.badge.disponivel{background:#003d1a;color:#00e87e}
+.badge.manutencao{background:#3d2600;color:#f0c419}
+.badge.alerta{background:#3d0000;color:#ff6b6b}
+
+/* ── Botões ── */
+.btn{padding:9px 18px;border:none;border-radius:8px;cursor:pointer;
+     font-size:0.83rem;font-weight:500;transition:all .2s}
+.btn-verde{background:#00e87e;color:#0f1a14}
+.btn-verde:hover{background:#00c96a}
+.btn-outline{background:transparent;border:1px solid #2d4a35;color:#aaa}
+.btn-outline:hover{border-color:#00e87e;color:#00e87e}
+.btn-perigo{background:transparent;border:1px solid #3d0000;color:#ff6b6b;padding:5px 12px;font-size:0.78rem}
+.btn-perigo:hover{background:#3d0000}
+
+/* ── Formulário / Modal ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+          align-items:center;justify-content:center;z-index:100}
+.modal-bg.aberto{display:flex}
+.modal{background:#0f1a14;border:1px solid #2d4a35;border-radius:16px;
+       padding:32px;width:460px;max-width:90vw}
+.modal h3{margin-bottom:22px;font-size:1rem}
+.campo{margin-bottom:16px}
+.campo label{display:block;font-size:0.8rem;color:#aaa;margin-bottom:6px}
+.campo input,.campo select,.campo textarea{
+  width:100%;padding:11px 14px;background:#0c1510;border:1px solid #2d4a35;
+  border-radius:8px;color:white;font-size:0.88rem;outline:none;font-family:inherit}
+.campo input:focus,.campo select,.campo textarea:focus{border-color:#00e87e}
+.campo textarea{height:80px;resize:vertical}
+.campo select option{background:#0f1a14}
+.modal-acoes{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.linha-campos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#msg-modal{font-size:0.82rem;color:#ff6b6b;margin-top:8px;min-height:16px}
+/* Corrige camada do mapa */
+.leaflet-container{
+    z-index: 1 !important;
+}
+
+/* Modal acima do mapa */
+.modal-bg{
+    z-index: 9998 !important;
+}
+
+.modal{
+    position: relative;
+    z-index: 9999 !important;
+}

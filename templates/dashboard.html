@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dashboard – Desloca Gestão</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">D</div>
+    <div><h1>Desloca</h1><p>GESTÃO</p></div>
+  </div>
+  <a href="/" class="nav-item ativo"><span class="ic">▦</span> Dashboard</a>
+  <a href="/patinetes" class="nav-item"><span class="ic">🛴</span> Patinetes</a>
+  <a href="/manutencao" class="nav-item"><span class="ic">🔧</span> Manutenção</a>
+  <div class="sidebar-footer">
+    <button class="btn-logout" onclick="sair()">Sair do sistema</button>
+  </div>
+</aside>
+
+<!-- CONTEÚDO -->
+<div class="main">
+  <div class="topbar">
+    <h2>Visão geral</h2>
+    <span class="usuario" id="nome-usuario">Carregando...</span>
+  </div>
+  <div class="conteudo">
+
+    <!-- CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card verde">
+        <div class="numero" id="s-total">–</div>
+        <div class="rotulo">Total de patinetes</div>
+      </div>
+      <div class="stat-card azul">
+        <div class="numero" id="s-disponiveis">–</div>
+        <div class="rotulo">Disponíveis agora</div>
+      </div>
+      <div class="stat-card amarelo">
+        <div class="numero" id="s-manutencao">–</div>
+        <div class="rotulo">Em manutenção</div>
+      </div>
+      <div class="stat-card vermelho">
+        <div class="numero" id="s-alerta">–</div>
+        <div class="rotulo">Bateria crítica (&lt;20%)</div>
+      </div>
+    </div>
+
+    <!-- KM total -->
+    <div style="background:#0f1a14;border:1px solid #1e3a2a;border-radius:12px;
+                padding:20px;margin-bottom:24px;display:inline-block;min-width:220px">
+      <div style="font-size:1.8rem;font-weight:bold;color:#00e87e" id="s-km">–</div>
+      <div style="font-size:0.78rem;color:#888">km rodados na frota</div>
+    </div>
+
+    <!-- Últimas manutenções -->
+    <div class="tabela-container">
+      <div class="tabela-header">
+        <h3>Últimas manutenções</h3>
+        <a href="/manutencao" class="btn btn-outline">Ver todas</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Patinete</th>
+            <th>Tipo</th>
+            <th>Descrição</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-manutencoes">
+          <tr><td colspan="4" style="color:#555;text-align:center;padding:24px">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+async function carregarDashboard(){
+  const resp = await fetch("/api/dashboard");
+  const d = await resp.json();
+  document.getElementById("s-total").textContent = d.total;
+  document.getElementById("s-disponiveis").textContent = d.disponiveis;
+  document.getElementById("s-manutencao").textContent = d.manutencao;
+  document.getElementById("s-alerta").textContent = d.alerta_bateria;
+  document.getElementById("s-km").textContent = d.km_total + " km";
+
+  const tbody = document.getElementById("tbody-manutencoes");
+  if(d.ultimas_manutencoes.length === 0){
+    tbody.innerHTML = `<tr><td colspan="4" style="color:#555;text-align:center;padding:24px">Nenhuma manutenção registrada</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = d.ultimas_manutencoes.map(m => `
+    <tr>
+      <td><strong>${m.numero_registro}</strong></td>
+      <td>${m.tipo}</td>
+      <td style="color:#aaa">${m.descricao || "–"}</td>
+      <td style="color:#888">${m.data}</td>
+    </tr>
+  `).join("");
+}
+
+async function sair(){
+  await fetch("/api/logout",{method:"POST"});
+  window.location.href = "/login";
+}
+
+// Mostra nome do usuário salvo na sessão via cookie (simplificado)
+carregarDashboard();
+</script>
+</body>
+</html>

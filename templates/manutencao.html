@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Manutenção – Desloca Gestão</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">D</div>
+    <div><h1>Desloca</h1><p>GESTÃO</p></div>
+  </div>
+  <a href="/" class="nav-item"><span class="ic">▦</span> Dashboard</a>
+  <a href="/patinetes" class="nav-item"><span class="ic">🛴</span> Patinetes</a>
+  <a href="/manutencao" class="nav-item ativo"><span class="ic">🔧</span> Manutenção</a>
+  <div class="sidebar-footer">
+    <button class="btn-logout" onclick="sair()">Sair do sistema</button>
+  </div>
+</aside>
+
+<!-- CONTEÚDO -->
+<div class="main">
+  <div class="topbar">
+    <h2>Histórico de manutenção</h2>
+    <button class="btn btn-verde" onclick="abrirModal()">+ Registrar manutenção</button>
+  </div>
+  <div class="conteudo">
+
+    <!-- FILTRO -->
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <select id="filtro-patinete" onchange="carregar()"
+        style="padding:8px 14px;background:#0f1a14;border:1px solid #2d4a35;
+               border-radius:8px;color:white;font-size:0.85rem;outline:none">
+        <option value="">Todos os patinetes</option>
+      </select>
+      <select id="filtro-tipo" onchange="filtrar()"
+        style="padding:8px 14px;background:#0f1a14;border:1px solid #2d4a35;
+               border-radius:8px;color:white;font-size:0.85rem;outline:none">
+        <option value="">Todos os tipos</option>
+        <option>Revisão preventiva</option>
+        <option>Troca de peça</option>
+        <option>Reparo elétrico</option>
+        <option>Limpeza</option>
+        <option>Outro</option>
+      </select>
+    </div>
+
+    <!-- TABELA -->
+    <div class="tabela-container">
+      <div class="tabela-header">
+        <h3>Registros de manutenção</h3>
+        <span id="contagem" style="font-size:0.8rem;color:#888"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Patinete</th>
+            <th>Tipo</th>
+            <th>Descrição</th>
+            <th>Técnico</th>
+            <th>Custo</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>Nova manutenção</h3>
+    <div class="campo">
+      <label>Patinete *</label>
+      <select id="f-patinete">
+        <option value="">Selecione...</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Tipo de manutenção *</label>
+      <select id="f-tipo">
+        <option>Revisão preventiva</option>
+        <option>Troca de peça</option>
+        <option>Reparo elétrico</option>
+        <option>Limpeza</option>
+        <option>Outro</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Descrição</label>
+      <textarea id="f-descricao" placeholder="Detalhes do que foi feito..."></textarea>
+    </div>
+    <div class="linha-campos">
+      <div class="campo">
+        <label>Técnico responsável</label>
+        <input type="text" id="f-tecnico" placeholder="Nome do técnico"/>
+      </div>
+      <div class="campo">
+        <label>Custo (R$)</label>
+        <input type="number" id="f-custo" value="0" min="0" step="0.01"/>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Data *</label>
+      <input type="date" id="f-data"/>
+    </div>
+    <p id="msg-modal"></p>
+    <div class="modal-acoes">
+      <button class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-verde" onclick="salvar()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let todos = [];
+let patinetes = [];
+
+async function carregarPatinetes(){
+  const resp = await fetch("/api/patinetes");
+  patinetes = await resp.json();
+  const sel1 = document.getElementById("filtro-patinete");
+  const sel2 = document.getElementById("f-patinete");
+  patinetes.forEach(p => {
+    sel1.innerHTML += `<option value="${p.id}">${p.numero_registro}</option>`;
+    sel2.innerHTML += `<option value="${p.id}">${p.numero_registro}</option>`;
+  });
+}
+
+async function carregar(){
+  const pid = document.getElementById("filtro-patinete").value;
+  const url = pid ? `/api/manutencoes?patinete_id=${pid}` : "/api/manutencoes";
+  const resp = await fetch(url);
+  todos = await resp.json();
+  filtrar();
+}
+
+function filtrar(){
+  const tipo = document.getElementById("filtro-tipo").value;
+  const filtrado = tipo ? todos.filter(m => m.tipo === tipo) : todos;
+  renderizar(filtrado);
+  document.getElementById("contagem").textContent = filtrado.length + " registros";
+}
+
+function renderizar(lista){
+  const tbody = document.getElementById("tbody");
+  if(lista.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#555;padding:24px">Nenhum registro encontrado</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(m => `
+    <tr>
+      <td><strong>${m.numero_registro}</strong></td>
+      <td><span style="color:#00e87e;font-size:0.82rem">${m.tipo}</span></td>
+      <td style="color:#aaa;max-width:220px">${m.descricao || "–"}</td>
+      <td style="color:#aaa">${m.tecnico || "–"}</td>
+      <td style="color:#f0c419">${m.custo > 0 ? "R$ " + parseFloat(m.custo).toFixed(2) : "–"}</td>
+      <td style="color:#888">${m.data}</td>
+      <td><button class="btn btn-perigo" onclick="excluir(${m.id})">Excluir</button></td>
+    </tr>
+  `).join("");
+}
+
+function abrirModal(){
+  // Define data de hoje como padrão
+  document.getElementById("f-data").value = new Date().toISOString().split("T")[0];
+  document.getElementById("msg-modal").textContent = "";
+  document.getElementById("modal").classList.add("aberto");
+}
+function fecharModal(){ document.getElementById("modal").classList.remove("aberto") }
+
+async function salvar(){
+  const msg = document.getElementById("msg-modal");
+  const pid = document.getElementById("f-patinete").value;
+  if(!pid){ msg.textContent = "Selecione um patinete"; return; }
+  const dados = {
+    patinete_id: parseInt(pid),
+    tipo: document.getElementById("f-tipo").value,
+    descricao: document.getElementById("f-descricao").value,
+    tecnico: document.getElementById("f-tecnico").value,
+    custo: parseFloat(document.getElementById("f-custo").value) || 0,
+    data: document.getElementById("f-data").value
+  };
+  if(!dados.data){ msg.textContent = "Informe a data"; return; }
+  const resp = await fetch("/api/manutencoes",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(dados)
+  });
+  const d = await resp.json();
+  if(resp.ok){ fecharModal(); carregar(); }
+  else { msg.textContent = d.erro; }
+}
+
+async function excluir(id){
+  if(!confirm("Excluir este registro?")) return;
+  await fetch(`/api/manutencoes/${id}`,{method:"DELETE"});
+  carregar();
+}
+
+async function sair(){ await fetch("/api/logout",{method:"POST"}); window.location.href="/login"; }
+
+carregarPatinetes().then(carregar);
+</script>
+</body>
+</html>

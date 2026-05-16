@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Patinetes – Desloca Gestão</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    #mapa{height:340px;border-radius:12px;margin-bottom:24px}
+    .filtros{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+    .filtros input{padding:8px 14px;background:#0f1a14;border:1px solid #2d4a35;
+                   border-radius:8px;color:white;font-size:0.85rem;outline:none;flex:1;min-width:180px}
+    .filtros select{padding:8px 14px;background:#0f1a14;border:1px solid #2d4a35;
+                    border-radius:8px;color:white;font-size:0.85rem;outline:none}
+    .acoes-td{display:flex;gap:6px}
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">D</div>
+    <div><h1>Desloca</h1><p>GESTÃO</p></div>
+  </div>
+  <a href="/" class="nav-item"><span class="ic">▦</span> Dashboard</a>
+  <a href="/patinetes" class="nav-item ativo"><span class="ic">🛴</span> Patinetes</a>
+  <a href="/manutencao" class="nav-item"><span class="ic">🔧</span> Manutenção</a>
+  <div class="sidebar-footer">
+    <button class="btn-logout" onclick="sair()">Sair do sistema</button>
+  </div>
+</aside>
+
+<!-- CONTEÚDO -->
+<div class="main">
+  <div class="topbar">
+    <h2>Gestão de patinetes</h2>
+    <button class="btn btn-verde" onclick="abrirModal()">+ Novo patinete</button>
+  </div>
+  <div class="conteudo">
+
+    <!-- MAPA -->
+    <div id="mapa"></div>
+
+    <!-- FILTROS -->
+    <div class="filtros">
+      <input type="text" id="filtro-busca" placeholder="Buscar por número..." oninput="filtrar()"/>
+      <select id="filtro-status" onchange="filtrar()">
+        <option value="">Todos os status</option>
+        <option value="disponivel">Disponível</option>
+        <option value="manutencao">Em manutenção</option>
+        <option value="alerta">Alerta</option>
+      </select>
+    </div>
+
+    <!-- TABELA -->
+    <div class="tabela-container">
+      <div class="tabela-header">
+        <h3>Frota completa</h3>
+        <span id="contagem" style="font-size:0.8rem;color:#888"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nº Registro</th>
+            <th>Status</th>
+            <th>Bateria</th>
+            <th>Quilometragem</th>
+            <th>Última manutenção</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRO -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="modal-titulo">Novo patinete</h3>
+    <div class="campo">
+      <label>Número de registro *</label>
+      <input type="text" id="f-registro" placeholder="PAT-0006"/>
+    </div>
+    <div class="linha-campos">
+      <div class="campo">
+        <label>Bateria (%)</label>
+        <input type="number" id="f-bateria" value="100" min="0" max="100"/>
+      </div>
+      <div class="campo">
+        <label>Quilometragem</label>
+        <input type="number" id="f-km" value="0" min="0" step="0.1"/>
+      </div>
+    </div>
+    <div class="linha-campos">
+      <div class="campo">
+        <label>Latitude</label>
+        <input type="number" id="f-lat" value="-23.5558" step="0.0001"/>
+      </div>
+      <div class="campo">
+        <label>Longitude</label>
+        <input type="number" id="f-lng" value="-46.6396" step="0.0001"/>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Status</label>
+      <select id="f-status">
+        <option value="disponivel">Disponível</option>
+        <option value="manutencao">Em manutenção</option>
+        <option value="alerta">Alerta</option>
+      </select>
+    </div>
+    <p id="msg-modal"></p>
+    <div class="modal-acoes">
+      <button class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-verde" onclick="salvar()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let todos = [];
+let editandoId = null;
+
+const mapa = L.map("mapa").setView([-23.5558,-46.6396],13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {attribution:"© OpenStreetMap"}).addTo(mapa);
+
+const cores = {disponivel:"#00e87e", manutencao:"#f0c419", alerta:"#ff6b6b"};
+let marcadores = {};
+
+function icone(status){
+  const cor = cores[status] || "#aaa";
+  return L.divIcon({
+    html:`<div style="background:${cor};color:#0f1a14;width:30px;height:30px;border-radius:50%;
+          display:flex;align-items:center;justify-content:center;font-size:0.65rem;
+          font-weight:bold;border:2px solid white">P</div>`,
+    className:"", iconSize:[30,30], iconAnchor:[15,15]
+  });
+}
+
+async function carregar(){
+  const resp = await fetch("/api/patinetes");
+  todos = await resp.json();
+  renderizar(todos);
+
+  // Limpa marcadores antigos
+  Object.values(marcadores).forEach(m => mapa.removeLayer(m));
+  marcadores = {};
+  todos.forEach(p => {
+    const m = L.marker([p.lat, p.lng], {icon: icone(p.status)})
+      .addTo(mapa)
+      .bindPopup(`<b>${p.numero_registro}</b><br>Bateria: ${p.bateria}%<br>Status: ${p.status}`);
+    marcadores[p.id] = m;
+  });
+
+  document.getElementById("contagem").textContent = todos.length + " patinetes";
+}
+
+function renderizar(lista){
+  const tbody = document.getElementById("tbody");
+  if(lista.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#555;padding:24px">Nenhum patinete encontrado</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(p => `
+    <tr>
+      <td><strong>${p.numero_registro}</strong></td>
+      <td><span class="badge ${p.status}">${p.status}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;background:#1a2e1f;border-radius:4px;height:6px">
+            <div style="width:${p.bateria}%;background:${p.bateria<20?'#ff6b6b':p.bateria<50?'#f0c419':'#00e87e'};
+                 height:6px;border-radius:4px"></div>
+          </div>
+          <span style="font-size:0.8rem;color:#aaa;min-width:32px">${p.bateria}%</span>
+        </div>
+      </td>
+      <td style="color:#aaa">${p.quilometragem} km</td>
+      <td style="color:#888">${p.ultima_manutencao || "–"}</td>
+      <td>
+        <div class="acoes-td">
+          <button class="btn btn-outline" style="padding:5px 10px;font-size:0.75rem"
+            onclick="editar(${p.id})">Editar</button>
+          <button class="btn btn-perigo"
+            onclick="excluir(${p.id},'${p.numero_registro}')">Excluir</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function filtrar(){
+  const busca = document.getElementById("filtro-busca").value.toLowerCase();
+  const status = document.getElementById("filtro-status").value;
+  const filtrado = todos.filter(p =>
+    p.numero_registro.toLowerCase().includes(busca) &&
+    (status === "" || p.status === status)
+  );
+  renderizar(filtrado);
+}
+
+function abrirModal(){ editandoId=null; document.getElementById("modal-titulo").textContent="Novo patinete";
+  document.getElementById("msg-modal").textContent="";
+  document.getElementById("modal").classList.add("aberto") }
+function fecharModal(){ document.getElementById("modal").classList.remove("aberto") }
+
+function editar(id){
+  const p = todos.find(x => x.id===id);
+  if(!p) return;
+  editandoId = id;
+  document.getElementById("modal-titulo").textContent = "Editar " + p.numero_registro;
+  document.getElementById("f-registro").value = p.numero_registro;
+  document.getElementById("f-registro").disabled = true;
+  document.getElementById("f-bateria").value = p.bateria;
+  document.getElementById("f-km").value = p.quilometragem;
+  document.getElementById("f-lat").value = p.lat;
+  document.getElementById("f-lng").value = p.lng;
+  document.getElementById("f-status").value = p.status;
+  document.getElementById("msg-modal").textContent = "";
+  document.getElementById("modal").classList.add("aberto");
+}
+
+async function salvar(){
+  const msg = document.getElementById("msg-modal");
+  const dados = {
+    numero_registro: document.getElementById("f-registro").value,
+    bateria: parseInt(document.getElementById("f-bateria").value),
+    quilometragem: parseFloat(document.getElementById("f-km").value),
+    lat: parseFloat(document.getElementById("f-lat").value),
+    lng: parseFloat(document.getElementById("f-lng").value),
+    status: document.getElementById("f-status").value
+  };
+  const url  = editandoId ? `/api/patinetes/${editandoId}` : "/api/patinetes";
+  const meth = editandoId ? "PUT" : "POST";
+  const resp = await fetch(url,{method:meth,headers:{"Content-Type":"application/json"},body:JSON.stringify(dados)});
+  const d = await resp.json();
+  if(resp.ok){ fecharModal(); document.getElementById("f-registro").disabled=false; carregar(); }
+  else { msg.textContent = d.erro; }
+}
+
+async function excluir(id, codigo){
+  if(!confirm(`Excluir ${codigo}? Esta ação não pode ser desfeita.`)) return;
+  await fetch(`/api/patinetes/${id}`,{method:"DELETE"});
+  carregar();
+}
+
+async function sair(){ await fetch("/api/logout",{method:"POST"}); window.location.href="/login"; }
+
+carregar();
+</script>
+</body>
+</html>

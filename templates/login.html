@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login – Desloca Gestão</title>
+
+
+
+  <link rel="stylesheet" href="/static/login.css">
+
+
+
+
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div>
+      <div class="logo-icon">D</div>
+    </div>
+    <div>
+      <h1>Desloca</h1>
+      <p>GESTÃO DE PATINETES</p>
+    </div>
+  </div>
+  <h2>Acesso restrito à equipe interna</h2>
+
+  <label>Email</label>
+  <input type="email" id="email" placeholder="seu@email.com" value="admin@desloca.com"/>
+
+  <label>Senha</label>
+  <input type="password" id="senha" placeholder="••••••••" value="admin123"/>
+
+  <button onclick="entrar()">Entrar no sistema</button>
+  <p id="msg"></p>
+  
+  <div class="hint">
+  Não possui acesso?
+  <a href="/cadastro">Criar conta</a>
+</div>
+
+  <div class="hint">
+    Padrão: admin@desloca.com / admin123
+  </div>
+</div>
+
+<script>
+async function entrar(){
+  const msg = document.getElementById("msg");
+  msg.textContent = "";
+  const resp = await fetch("/api/login",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      email: document.getElementById("email").value,
+      senha: document.getElementById("senha").value
+    })
+  });
+  const d = await resp.json();
+  if(resp.ok){ window.location.href = "/" }
+  else { msg.textContent = d.erro }
+}
+document.addEventListener("keydown", e => { if(e.key==="Enter") entrar() });
+</script>
+</body>
+</html>
